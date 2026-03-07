@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediaSkanner LV</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F5F2EB; --bg2:#EDE9E0; --ink:#1A1714; --ink2:#4A4540; --ink3:#8A837A;
+  --ink4:#BDB8B0; --accent:#C8381A; --accent2:#1A5FC8; --accent3:#1A8C4E;
+  --accent4:#C88A1A; --border:#D5D0C5; --border2:#C0BAB0; --card:#FDFAF5;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;font-size:14px}
+
+/* MASTHEAD */
+.masthead{border-bottom:3px solid var(--ink);background:var(--bg);position:sticky;top:0;z-index:100}
+.mh-inner{max-width:1160px;margin:0 auto;padding:0 24px;display:flex;align-items:stretch;min-height:60px}
+.logo-wrap{display:flex;align-items:center;gap:10px;padding-right:24px;border-right:2px solid var(--border);flex-shrink:0}
+.logo-main{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--ink)}
+.logo-main span{color:var(--accent)}
+.logo-tag{font-family:var(--mono);font-size:9px;color:var(--ink3);letter-spacing:2px;border:1px solid var(--border2);padding:2px 6px;border-radius:2px}
+.search-wrap{flex:1;display:flex;align-items:center;padding:0 20px;gap:10px}
+#searchInput{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:16px;color:var(--ink)}
+#searchInput::placeholder{color:var(--ink4)}
+.search-btn{background:var(--accent);color:white;border:none;padding:0 28px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;cursor:pointer;height:100%;flex-shrink:0;transition:background .15s}
+.search-btn:hover{background:#a02e14}
+
+/* FILTERBAR */
+.filterbar{background:var(--bg2);border-bottom:1px solid var(--border)}
+.fb-inner{max-width:1160px;margin:0 auto;padding:0 24px;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+.fb-inner::-webkit-scrollbar{display:none}
+.fg{display:flex;align-items:stretch;border-right:1px solid var(--border);padding-right:16px;margin-right:16px}
+.fg:last-child{border-right:none}
+.fl{font-family:var(--mono);font-size:9px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;display:flex;align-items:center;margin-right:8px}
+.ftag{padding:10px 14px;font-family:inherit;font-size:12px;font-weight:400;color:var(--ink2);cursor:pointer;background:none;border:none;border-bottom:3px solid transparent;white-space:nowrap;transition:all .12s}
+.ftag:hover{color:var(--ink);border-bottom-color:var(--border2)}
+.ftag.on{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+
+/* LAYOUT */
+.main{max-width:1160px;margin:0 auto;padding:28px 24px;display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
+
+/* SIDEBAR */
+.sidebar{position:sticky;top:110px}
+.ss{border:1px solid var(--border);background:var(--card);margin-bottom:14px;overflow:hidden}
+.ss-title{font-family:var(--mono);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.src-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;user-select:none}
+.src-row:last-child{border-bottom:none}
+.src-row:hover{background:var(--bg2)}
+.src-row.on .src-name{color:var(--ink);font-weight:600}
+.src-left{display:flex;align-items:center;gap:8px}
+.src-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.src-name{font-size:12px;color:var(--ink2)}
+.src-chk{width:15px;height:15px;border-radius:3px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;color:white;flex-shrink:0;transition:all .12s}
+.src-row.on .src-chk{background:var(--accent2);border-color:var(--accent2)}
+.date-opts{padding:6px}
+.dopt{padding:6px 10px;font-size:12px;color:var(--ink2);border-radius:3px;cursor:pointer;margin:2px 0;transition:background .1s;user-select:none}
+.dopt:hover{background:var(--bg2)}
+.dopt.on{background:var(--ink);color:white;font-weight:600}
+.ai-note{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--ink3);letter-spacing:1.5px;padding-top:8px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* CONTENT */
+.stats-bar{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid var(--ink);margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.stats-count{font-family:'Bebas Neue',sans-serif;font-size:38px;font-weight:900;line-height:1;color:var(--ink)}
+.stats-label{font-size:13px;color:var(--ink3);margin-left:8px}
+.stats-query{font-family:var(--mono);font-size:12px;color:var(--accent);padding:3px 8px;background:rgba(200,56,26,.08);border:1px solid rgba(200,56,26,.2);border-radius:3px;margin-left:8px}
+.sort-row{display:flex;align-items:center;gap:6px}
+.sort-lbl{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.sort-btn{font-size:12px;padding:3px 10px;border:1px solid var(--border);background:none;color:var(--ink2);cursor:pointer;font-family:inherit;transition:all .1s}
+.sort-btn.on{background:var(--ink);color:white;border-color:var(--ink)}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--border);margin-bottom:10px;padding:18px 20px;transition:box-shadow .15s;cursor:default}
+.card:hover{box-shadow:3px 3px 0 var(--border2)}
+.card.video{border-left-color:#C8381A}
+.card.audio{border-left-color:#1A5FC8}
+.card.article{border-left-color:#1A8C4E}
+.card.social{border-left-color:#C88A1A}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.badges{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 6px;border:1px solid;border-radius:2px}
+.badge.video{color:#C8381A;border-color:#C8381A}
+.badge.audio{color:#1A5FC8;border-color:#1A5FC8}
+.badge.article{color:#1A8C4E;border-color:#1A8C4E}
+.badge.social{color:#C88A1A;border-color:#C88A1A}
+.badge.src{background:var(--bg2);color:var(--ink3);border-color:var(--border2)}
+.card-date{font-family:var(--mono);font-size:10px;color:var(--ink3);flex-shrink:0}
+.card-title{font-size:16px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:7px}
+.card-excerpt{font-size:13px;color:var(--ink2);line-height:1.65;font-weight:300}
+.card-excerpt mark,.card-title mark{background:rgba(200,56,26,.12);color:var(--accent);padding:0 2px;border-radius:2px;font-weight:600}
+
+/* TIMESTAMPS */
+.ts-block{margin-top:12px;border:1px solid var(--border);background:var(--bg2);overflow:hidden}
+.ts-hdr{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);padding:5px 10px;border-bottom:1px solid var(--border)}
+.ts-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);transition:background .1s}
+.ts-row:last-child{border-bottom:none}
+.ts-row:hover{background:rgba(200,56,26,.05)}
+.ts-time{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:50px}
+.ts-sep{width:1px;height:14px;background:var(--border2);flex-shrink:0}
+.ts-text{font-size:12px;color:var(--ink2);flex:1}
+.ts-text mark{background:rgba(200,56,26,.12);color:var(--accent);padding:0 2px;border-radius:2px}
+.ts-play{font-family:var(--mono);font-size:9px;color:var(--accent);padding:2px 7px;border:1px solid var(--accent);border-radius:2px;text-decoration:none;flex-shrink:0;transition:all .1s}
+.ts-play:hover{background:var(--accent);color:white}
+
+/* CARD FOOTER */
+.card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)}
+.card-link{font-family:var(--mono);font-size:11px;color:var(--accent2);text-decoration:none}
+.card-link:hover{text-decoration:underline}
+.rel-wrap{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.rel-dots{display:flex;gap:2px}
+.rel-dot{width:6px;height:6px;border-radius:1px;background:var(--border2)}
+.rel-dot.on{background:var(--accent3)}
+
+/* STATES */
+.state{text-align:center;padding:60px 20px}
+.big-word{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--border);letter-spacing:3px;line-height:1}
+.state-title{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--ink2);margin-top:12px;letter-spacing:1px}
+.state-sub{font-size:13px;color:var(--ink3);margin-top:8px;font-weight:300}
+
+/* SOURCE GRID */
+.src-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px}
+.sc{border:1px solid var(--border);background:var(--card);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.sc-name{font-size:12px;font-weight:700;color:var(--ink)}
+.sc-type{font-family:var(--mono);font-size:9px;color:var(--ink3);margin-top:2px}
+
+/* LOADING */
+.load-wrap{padding:32px 0}
+.load-box{border:1px solid var(--border);background:var(--card);overflow:hidden}
+.load-bar-wrap{height:3px;background:var(--bg2)}
+.load-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .4s ease}
+.load-log{padding:12px 16px;max-height:220px;overflow-y:auto}
+.log-line{font-family:var(--mono);font-size:11px;padding:4px 0;border-bottom:1px solid var(--bg2);display:flex;align-items:center;gap:8px}
+.log-line:last-child{border-bottom:none}
+.log-time{color:var(--ink4);font-size:10px;flex-shrink:0}
+.log-msg{color:var(--ink)}
+.log-msg.done{color:var(--accent3)}
+.log-msg.warn{color:var(--accent4)}
+.log-msg.err{color:var(--accent)}
+
+/* ERROR */
+.err-box{font-family:var(--mono);font-size:12px;color:var(--accent);border:1px solid rgba(200,56,26,.3);padding:12px 16px;margin:16px auto;max-width:500px;text-align:left;background:rgba(200,56,26,.04)}
+
+@media(max-width:900px){
+  .main{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .src-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .main{padding:16px}
+  .mh-inner{padding:0 16px}
+  .stats-bar{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="mh-inner">
+    <div class="logo-wrap">
+      <span class="logo-main">MEDIA<span>SKANNER</span></span>
+      <span class="logo-tag">LV · BETA</span>
+    </div>
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="Ievadi atslēgvārdu vai frāzi..." autocomplete="off"/>
+    </div>
+    <button class="search-btn" onclick="doSearch()">MEKLĒT</button>
+  </div>
+</div>
+
+<!-- FILTERBAR -->
+<div class="filterbar">
+  <div class="fb-inner">
+    <div class="fg">
+      <span class="fl">VEIDS</span>
+      <button class="ftag on" data-type="all" onclick="setType(this)">Visi</button>
+      <button class="ftag" data-type="article" onclick="setType(this)">📰 Raksti</button>
+      <button class="ftag" data-type="video" onclick="setType(this)">🎬 Video</button>
+      <button class="ftag" data-type="audio" onclick="setType(this)">🎙 Audio</button>
+      <button class="ftag" data-type="social" onclick="setType(this)">💬 Sociālie</button>
+    </div>
+    <div class="fg">
+      <span class="fl">VALODA</span>
+      <button class="ftag on" data-lang="all" onclick="setLang(this)">Visas</button>
+      <button class="ftag" data-lang="lv" onclick="setLang(this)">LV</button>
+      <button class="ftag" data-lang="ru" onclick="setLang(this)">RU</button>
+      <button class="ftag" data-lang="en" onclick="setLang(this)">EN</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="ss">
+      <div class="ss-title">📅 PERIODS</div>
+      <div class="date-opts">
+        <div class="dopt on" data-d="all" onclick="setDate(this)">Viss laiks</div>
+        <div class="dopt" data-d="day" onclick="setDate(this)">Pēdējās 24h</div>
+        <div class="dopt" data-d="week" onclick="setDate(this)">Pēdējā nedēļa</div>
+        <div class="dopt" data-d="month" onclick="setDate(this)">Pēdējais mēnesis</div>
+        <div class="dopt" data-d="year" onclick="setDate(this)">Šis gads</div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-title">📡 AVOTI</div>
+      <div id="srcList">
+        <div class="src-row on" data-src="delfi" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#1A5FC8"></div><span class="src-name">Delfi.lv</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="lsm" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#1A8C4E"></div><span class="src-name">LSM.lv</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="apollo" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#C8381A"></div><span class="src-name">Apollo.lv</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="tvnet" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#C88A1A"></div><span class="src-name">TVNet.lv</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="jauns" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#8A1AC8"></div><span class="src-name">Jauns.lv</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="ltv" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#C8381A"></div><span class="src-name">LTV</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="lr" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#1A5FC8"></div><span class="src-name">Latvijas Radio</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="youtube" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#C8381A"></div><span class="src-name">YouTube LV</span></div><div class="src-chk">✓</div></div>
+        <div class="src-row on" data-src="social" onclick="toggleSrc(this)"><div class="src-left"><div class="src-dot" style="background:#1A8C4E"></div><span class="src-name">Sociālie tīkli</span></div><div class="src-chk">✓</div></div>
+      </div>
+    </div>
+    <div class="ai-note"><div class="ai-dot"></div>AI · CLAUDE + WEB SEARCH</div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div id="content">
+    <div id="vInitial">
+      <div class="state">
+        <div class="big-word">SKANNER</div>
+        <div class="state-title">Meklē Latvijas medijos</div>
+        <div class="state-sub">Ievadi atslēgvārdu — AI meklēs reālus rezultātus no visiem avotiem</div>
+      </div>
+      <div class="src-grid">
+        <div class="sc"><div class="src-dot" style="background:#1A5FC8;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">Delfi.lv</div><div class="sc-type">RAKSTI · VIDEO</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#1A8C4E;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">LSM.lv</div><div class="sc-type">RADIO · TV · RAKSTI</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#C8381A;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">Apollo.lv</div><div class="sc-type">ZIŅAS · RAKSTI</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#C88A1A;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">TVNet.lv</div><div class="sc-type">ZIŅAS · VIDEO</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#8A1AC8;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">Jauns.lv</div><div class="sc-type">ZIŅAS</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#C8381A;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">LTV / LR</div><div class="sc-type">TV SIŽETI · RADIO</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#C8381A;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">YouTube LV</div><div class="sc-type">VIDEO KANĀLI</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#1A8C4E;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">Sociālie tīkli</div><div class="sc-type">FB · X · TIKTOK</div></div></div>
+        <div class="sc"><div class="src-dot" style="background:#1A5FC8;width:9px;height:9px;flex-shrink:0"></div><div><div class="sc-name">Starptautiskie</div><div class="sc-type">PAR LATVIJU</div></div></div>
+      </div>
+    </div>
+    <div id="vLoading" style="display:none">
+      <div class="load-wrap">
+        <div class="load-box">
+          <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+          <div class="load-log" id="loadLog"></div>
+        </div>
+      </div>
+    </div>
+    <div id="vResults" style="display:none">
+      <div class="stats-bar">
+        <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px">
+          <span class="stats-count" id="resCount">0</span>
+          <span class="stats-label">rezultāti</span>
+          <span class="stats-query" id="resQuery"></span>
+        </div>
+        <div class="sort-row">
+          <span class="sort-lbl">KĀRTOT:</span>
+          <button class="sort-btn on" data-s="relevance" onclick="setSort(this)">Atbilstība</button>
+          <button class="sort-btn" data-s="date" onclick="setSort(this)">Datums</button>
+          <button class="sort-btn" data-s="source" onclick="setSort(this)">Avots</button>
+        </div>
+      </div>
+      <div id="resList"></div>
+    </div>
+    <div id="vEmpty" style="display:none">
+      <div class="state"><div class="big-word">0</div><div class="state-title">Nekas netika atrasts</div><div class="state-sub">Pamēģini citu frāzi vai paplašini filtrus</div></div>
+    </div>
+    <div id="vError" style="display:none">
+      <div class="state"><div class="state-title">Meklēšanas kļūda</div><div class="err-box" id="errMsg"></div><div class="state-sub">Pārbaudi savienojumu un mēģini vēlreiz</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── state ─────────────────────────────────────────────────────────────────────
+let ST = {
+  q:'', type:'all', lang:'all', date:'all', sort:'relevance',
+  srcs: new Set(['delfi','lsm','apollo','tvnet','jauns','ltv','lr','youtube','social']),
+  results:[]
+};
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+
+// ── filters ───────────────────────────────────────────────────────────────────
+function setType(el){document.querySelectorAll('[data-type]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.type=el.dataset.type;if(ST.results.length)render();}
+function setLang(el){document.querySelectorAll('[data-lang]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.lang=el.dataset.lang;if(ST.results.length)render();}
+function setDate(el){document.querySelectorAll('[data-d]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.date=el.dataset.d;if(ST.results.length)render();}
+function setSort(el){document.querySelectorAll('[data-s]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.sort=el.dataset.s;render();}
+function toggleSrc(el){
+  const s=el.dataset.src;
+  if(ST.srcs.has(s)){ST.srcs.delete(s);el.classList.remove('on');}
+  else{ST.srcs.add(s);el.classList.add('on');}
+  if(ST.results.length)render();
+}
+
+// ── search ────────────────────────────────────────────────────────────────────
+async function doSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  if(!q) return;
+  ST.q = q;
+  show('Loading');
+  resetLoad();
+
+  const steps=[
+    [0,   '⚡','Meklēšana sākta...'],
+    [600, '🔍','Delfi.lv, LSM.lv, Apollo.lv...'],
+    [1400,'📺','LTV arhīvs, Latvijas Radio...'],
+    [2200,'🎬','YouTube LV kanāli...'],
+    [2900,'💬','Sociālie tīkli...'],
+    [3500,'🤖','AI analizē rezultātus...'],
+  ];
+  const timers = steps.map(([d,icon,msg],i)=>
+    setTimeout(()=>{addLog(icon,msg);setBar(5+Math.round((i+1)/steps.length*70));},d)
+  );
+
+  try {
+    const resp = await fetch('/api/search',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q})
+    });
+
+    timers.forEach(clearTimeout);
+
+    if(!resp.ok){
+      const e = await resp.json().catch(()=>({}));
+      throw new Error(e.error||`HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const results = data.results||[];
+
+    addLog('✅',`Atrasti ${results.length} rezultāti`,'done');
+    setBar(100);
+    ST.results = results;
+    setTimeout(()=>{
+      if(results.length) { show('Results'); render(); }
+      else show('Empty');
+    },500);
+
+  } catch(err){
+    timers.forEach(clearTimeout);
+    addLog('❌',err.message,'err');
+    setBar(100);
+    setTimeout(()=>{ document.getElementById('errMsg').textContent=err.message; show('Error'); },400);
+  }
+}
+
+// ── loading helpers ────────────────────────────────────────────────────────────
+function resetLoad(){ document.getElementById('loadLog').innerHTML=''; setBar(0); }
+function setBar(p){ document.getElementById('loadBar').style.width=p+'%'; }
+function addLog(icon,msg,cls=''){
+  const el=document.getElementById('loadLog');
+  const t=new Date().toLocaleTimeString('lv');
+  const d=document.createElement('div');
+  d.className='log-line';
+  d.innerHTML=`<span>${icon}</span><span class="log-time">${t}</span><span class="log-msg ${cls}">${msg}</span>`;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+// ── render results ────────────────────────────────────────────────────────────
+function render(){
+  let res=[...ST.results]
+    .filter(r=>ST.type==='all'||r.type===ST.type)
+    .filter(r=>ST.lang==='all'||r.lang===ST.lang)
+    .filter(r=>ST.srcs.has(r.source));
+
+  if(ST.sort==='date') res.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  else if(ST.sort==='source') res.sort((a,b)=>(a.sourceName||'').localeCompare(b.sourceName||''));
+  else res.sort((a,b)=>(b.relevance||0)-(a.relevance||0));
+
+  document.getElementById('resCount').textContent=res.length;
+  document.getElementById('resQuery').textContent=`"${ST.q}"`;
+
+  if(!res.length){ show('Empty'); return; }
+  show('Results');
+  document.getElementById('resList').innerHTML=res.map(cardHTML).join('');
+}
+
+function hl(t){
+  if(!t||!ST.q) return t||'';
+  const esc=ST.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return t.replace(new RegExp(`(${esc})`,'gi'),'<mark>$1</mark>');
+}
+
+function cardHTML(r){
+  const tl={video:'VIDEO',audio:'AUDIO',article:'RAKSTS',social:'SOCIĀLS'};
+  const dots=[1,2,3,4,5].map(i=>`<div class="rel-dot${(r.relevance||0)>=i*20?' on':''}"></div>`).join('');
+  const ts=r.timestamps?.length?`
+    <div class="ts-block">
+      <div class="ts-hdr">⏱ PRECĪZAS VIETAS IERAKSTĀ</div>
+      ${r.timestamps.map((ts,i)=>`
+        <div class="ts-row" style="${i===r.timestamps.length-1?'border-bottom:none':''}">
+          <span class="ts-time">▶ ${ts.time}</span>
+          <div class="ts-sep"></div>
+          <span class="ts-text">${hl(ts.text)}</span>
+          <a class="ts-play" href="${r.url||'#'}" target="_blank">ATVĒRT</a>
+        </div>`).join('')}
+    </div>`:'';
+
+  return `<div class="card ${r.type||''}">
+    <div class="card-head">
+      <div class="badges">
+        <span class="badge ${r.type||''}">${tl[r.type]||r.type||''}</span>
+        <span class="badge src">${r.sourceName||r.source||''}</span>
+        ${r.lang?`<span class="badge src">${r.lang.toUpperCase()}</span>`:''}
+      </div>
+      <span class="card-date">${r.dateLabel||r.date||''}</span>
+    </div>
+    <div class="card-title">${hl(r.title)||''}</div>
+    <div class="card-excerpt">${hl(r.excerpt)||''}</div>
+    ${ts}
+    <div class="card-foot">
+      <a class="card-link" href="${r.url||'#'}" target="_blank">→ ATVĒRT AVOTU</a>
+      <div class="rel-wrap"><span>ATBILSTĪBA</span><div class="rel-dots">${dots}</div><span>${r.relevance||0}%</span></div>
+    </div>
+  </div>`;
+}
+
+// ── view switching ─────────────────────────────────────────────────────────────
+function show(name){
+  ['Initial','Loading','Results','Empty','Error'].forEach(n=>{
+    document.getElementById('v'+n).style.display=n===name?'':'none';
+  });
+}
+</script>
+</body>
+</html>
