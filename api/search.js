@@ -14,62 +14,64 @@ export default async function handler(req, res) {
 
   const now = new Date();
   const today = now.toISOString().split("T")[0];
-
-  // Aprēķina datumu robežas
-  const cutoffDate = new Date(now);
-  if (dateFilter === "day")   cutoffDate.setDate(now.getDate() - 1);
-  else if (dateFilter === "week")  cutoffDate.setDate(now.getDate() - 7);
-  else if (dateFilter === "month") cutoffDate.setMonth(now.getMonth() - 1);
-  else if (dateFilter === "year")  cutoffDate.setFullYear(now.getFullYear() - 1);
-  else cutoffDate.setFullYear(2000); // "all" — viss
-
-  const cutoffStr = cutoffDate.toISOString().split("T")[0];
-
-  // Mēneša un gada string priekš vaicājumiem
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const yyyy = now.getFullYear();
-  const prevMM = String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, "0");
-  const prevYYYY = now.getMonth() === 0 ? yyyy - 1 : yyyy;
 
-  const dateHint = dateFilter === "day"
-    ? `${yyyy}-${mm}-${String(now.getDate()).padStart(2,"0")}`
-    : dateFilter === "week"
-    ? `${yyyy} ${mm}`
-    : `${yyyy}-${mm} VAI ${prevYYYY}-${prevMM}`;
+  // Izvelk JSON masīvu no teksta — pareizi apstrādā ligzdotus masīvus
+  function extractJSON(text) {
+    const start = text.indexOf("[");
+    if (start === -1) return [];
+    let depth = 0;
+    let end = -1;
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === "[" || text[i] === "{") depth++;
+      else if (text[i] === "]" || text[i] === "}") {
+        depth--;
+        if (depth === 0) { end = i; break; }
+      }
+    }
+    if (end === -1) return [];
+    try {
+      const parsed = JSON.parse(text.slice(start, end + 1));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
 
   const searchGroups = [
     {
       searches: [
         `${query} Latvija ${yyyy}-${mm}`,
-        `${query} Latvia ${yyyy}-${mm}`,
+        `${query} Latvia news ${yyyy}`,
         `${query} Latvija šodien ${yyyy}`,
       ]
     },
     {
       searches: [
-        `${query} site:delfi.lv after:${cutoffStr}`,
-        `${query} site:lsm.lv after:${cutoffStr}`,
-        `${query} site:apollo.lv after:${cutoffStr}`,
+        `${query} site:delfi.lv`,
+        `${query} site:lsm.lv`,
+        `${query} site:apollo.lv`,
       ]
     },
     {
       searches: [
-        `${query} site:tvnet.lv after:${cutoffStr}`,
-        `${query} site:jauns.lv after:${cutoffStr}`,
-        `${query} site:nra.lv OR site:ir.lv after:${cutoffStr}`,
+        `${query} site:tvnet.lv`,
+        `${query} site:jauns.lv`,
+        `${query} site:nra.lv OR site:ir.lv`,
       ]
     },
     {
       searches: [
         `${query} Latvijas televīzija LTV ${yyyy}`,
-        `${query} Latvijas radio LR ${yyyy}`,
-        `${query} site:replay.lsm.lv after:${cutoffStr}`,
+        `${query} Latvijas radio ${yyyy}`,
+        `${query} site:replay.lsm.lv`,
       ]
     },
     {
       searches: [
-        `${query} youtube latvia ${yyyy}-${mm}`,
-        `${query} Latvija facebook twitter ${yyyy}-${mm}`,
+        `${query} youtube latvia ${yyyy}`,
+        `${query} Latvija facebook ${yyyy}-${mm}`,
         `${query} Latvija instagram tiktok ${yyyy}`,
       ]
     }
@@ -78,26 +80,37 @@ export default async function handler(req, res) {
   const makePrompt = (group) => `Tu esi Latvijas mediju meklēšanas sistēma. Šodienas datums: ${today}.
 
 Meklē rezultātus par: "${query}"
-SVARĪGI: Atgriezies TIKAI ar rezultātiem kas publicēti PĒC ${cutoffStr}. Vecākus rezultātus IGNORĒ.
 
 Izmanto web_search un veic šos vaicājumus:
 ${group.searches.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-Ja meklēšana neatgriež jaunus rezultātus (pēc ${cutoffStr}), raksti tukšu masīvu: []
+Pēc meklēšanas atgriezies TIKAI ar JSON masīvu. Nekāds cits teksts — tikai JSON.
+Formāts:
+[
+  {
+    "id": 1,
+    "type": "article",
+    "source": "delfi",
+    "sourceName": "Delfi.lv",
+    "title": "Raksta virsraksts",
+    "excerpt": "2-3 teikumi par saturu latviešu valodā.",
+    "date": "${today}",
+    "dateLabel": "Šodien",
+    "url": "https://www.delfi.lv/raksts",
+    "timestamps": null,
+    "relevance": 85,
+    "lang": "lv"
+  }
+]
 
-Atgriezies TIKAI ar JSON masīvu:
-[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"virsraksts","excerpt":"2-3 teikumi latviešu valodā","date":"${today}","dateLabel":"Šodien","url":"https://...","timestamps":null,"relevance":85,"lang":"lv"}]
+Pieļaujamās vērtības:
+- type: "article", "video", "audio", "social"
+- source: "delfi", "lsm", "apollo", "tvnet", "jauns", "ltv", "lr", "youtube", "social", "other"
+- lang: "lv", "ru", "en"
+- timestamps: null vai [{"time":"04:32","text":"konteksts"}] — tikai video un audio
+- dateLabel: "Šodien", "Vakar", "3 dienas atpakaļ", "1 nedēļa atpakaļ"
 
-Noteikumi:
-- type: "article","video","audio","social"
-- source: "delfi","lsm","apollo","tvnet","jauns","ltv","lr","youtube","social","other"
-- lang: "lv","ru","en"
-- timestamps: null vai [{time:"MM:SS",text:"..."}] tikai video/audio
-- dateLabel: "Šodien","Vakar","X dienas atpakaļ","X nedēļas atpakaļ"
-- date: OBLIGĀTI precīzs datums formātā YYYY-MM-DD — ja nezini precīzi, norādi aptuveni
-- NEIEKĻAUJ rezultātus kas vecāki par ${cutoffStr}
-
-Atgriezies ar 8-12 jaunākajiem rezultātiem. TIKAI JSON!`;
+Atgriezies ar 8-12 rezultātiem. Prioritizē jaunākos. TIKAI JSON MASĪVS — nekas cits!`;
 
   const callAPI = async (group) => {
     try {
@@ -116,39 +129,52 @@ Atgriezies ar 8-12 jaunākajiem rezultātiem. TIKAI JSON!`;
         }),
       });
 
-      if (!response.ok) return [];
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        console.error("API error:", err);
+        return [];
+      }
+
       const data = await response.json();
       const text = (data.content || [])
         .filter((b) => b.type === "text")
         .map((b) => b.text)
         .join("");
 
-      const match = text.match(/\[[\s\S]*?\]/);
-      if (!match) return [];
-      try { return JSON.parse(match[0]); } catch { return []; }
-    } catch {
+      return extractJSON(text);
+
+    } catch (err) {
+      console.error("Fetch error:", err.message);
       return [];
     }
   };
 
   try {
+    // Paralēli visi 5 izsaukumi
     const allResults = await Promise.all(searchGroups.map(callAPI));
     const combined = allResults.flat();
 
-    // Noņem dublikātus
+    // Noņem dublikātus pēc URL + virsraksta
     const seen = new Set();
     const unique = combined.filter((r) => {
-      const key = (r.url || "") + (r.title || "");
-      if (!key || seen.has(key)) return false;
+      if (!r || typeof r !== "object") return false;
+      const key = (r.url || "") + "|" + (r.title || "");
+      if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
 
-    // Filtrē pēc datuma serverī arī
-    const filtered = unique.filter((r) => {
-      if (dateFilter === "all" || !r.date) return true;
-      return r.date >= cutoffStr;
-    });
+    // Datumu filtrēšana serverī
+    const cutoff = new Date(now);
+    if (dateFilter === "day")   cutoff.setDate(now.getDate() - 1);
+    else if (dateFilter === "week")  cutoff.setDate(now.getDate() - 7);
+    else if (dateFilter === "month") cutoff.setMonth(now.getMonth() - 1);
+    else if (dateFilter === "year")  cutoff.setFullYear(now.getFullYear() - 1);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
+
+    const filtered = dateFilter === "all"
+      ? unique
+      : unique.filter((r) => !r.date || r.date >= cutoffStr);
 
     // Sakārto — jaunākie pirmie
     const final = filtered
