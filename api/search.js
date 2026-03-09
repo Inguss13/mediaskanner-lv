@@ -13,33 +13,39 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "API key nav konfigurēta serverī" });
 
-  const prompt = `Tu esi Latvijas mediju meklēšanas sistēma "MediaSkanner LV".
+  const prompt = `Tu esi Latvijas mediju meklēšanas sistēma "MediaSkanner LV". Meklē informāciju par: "${query}"
 
-Lietotājs meklē: "${query}"
+Izmanto web_search rīku. Veic šādus meklēšanas vaicājumus:
+1. "${query} delfi.lv"
+2. "${query} lsm.lv"
+3. "${query} Latvija"
 
-Izmanto web_search rīku lai atrastu REĀLUS, aktuālus rezultātus par šo tēmu no Latvijas medijiem.
-Veic vairākus meklēšanas vaicājumus:
-1. "${query} site:delfi.lv OR site:lsm.lv OR site:apollo.lv"
-2. "${query} Latvija ziņas"
-3. "${query} Latvia"
+Pēc meklēšanas atgriezies AR TIKAI šādu JSON masīvu — bez jebkāda cita teksta pirms vai pēc:
 
-Pēc meklēšanas atgriezies ar JSON masīvu. Katrs elements:
-{
-  "id": unikāls skaitlis,
-  "type": "article" vai "video" vai "audio" vai "social",
-  "source": "delfi" vai "lsm" vai "apollo" vai "tvnet" vai "jauns" vai "ltv" vai "lr" vai "youtube" vai "social",
-  "sourceName": "Delfi.lv" u.c.,
-  "title": raksta vai video virsraksts,
-  "excerpt": 2-3 teikumi par saturu latviešu valodā,
-  "date": "YYYY-MM-DD",
-  "dateLabel": "Šodien" vai "Vakar" vai "3 dienas atpakaļ" u.c.,
-  "url": tiešā saite uz saturu,
-  "timestamps": null vai [{time:"MM:SS", text:"...konteksts..."}] tikai video/audio,
-  "relevance": 1-100,
-  "lang": "lv" vai "ru" vai "en"
-}
+[
+  {
+    "id": 1,
+    "type": "article",
+    "source": "delfi",
+    "sourceName": "Delfi.lv",
+    "title": "raksta virsraksts",
+    "excerpt": "2-3 teikumi latviešu valodā",
+    "date": "2026-03-09",
+    "dateLabel": "Šodien",
+    "url": "https://...",
+    "timestamps": null,
+    "relevance": 90,
+    "lang": "lv"
+  }
+]
 
-SVARĪGI: Atgriezies TIKAI ar derīgu JSON masīvu, bez papildus teksta vai markdown formatējuma. Sniedz 6-12 rezultātus.`;
+Pieļaujamās vērtības:
+- type: "article", "video", "audio", "social"
+- source: "delfi", "lsm", "apollo", "tvnet", "jauns", "ltv", "lr", "youtube", "social"
+- lang: "lv", "ru", "en"
+- timestamps: null vai [{time:"MM:SS", text:"teksts"}] tikai video/audio
+
+Atgriezies ar 5-8 rezultātiem. TIKAI JSON — nekāds cits teksts!`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -51,7 +57,7 @@ SVARĪGI: Atgriezies TIKAI ar derīgu JSON masīvu, bez papildus teksta vai mark
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 8000,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
         messages: [{ role: "user", content: prompt }],
       }),
