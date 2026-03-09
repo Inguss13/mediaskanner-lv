@@ -6,78 +6,98 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { query } = req.body || {};
+  const { query, dateFilter = "month" } = req.body || {};
   if (!query) return res.status(400).json({ error: "Query is required" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "API key nav konfigurēta serverī" });
 
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
 
-  // 5 paralēlas meklēšanas grupas — katra ar plašu pārklājumu
+  // Aprēķina datumu robežas
+  const cutoffDate = new Date(now);
+  if (dateFilter === "day")   cutoffDate.setDate(now.getDate() - 1);
+  else if (dateFilter === "week")  cutoffDate.setDate(now.getDate() - 7);
+  else if (dateFilter === "month") cutoffDate.setMonth(now.getMonth() - 1);
+  else if (dateFilter === "year")  cutoffDate.setFullYear(now.getFullYear() - 1);
+  else cutoffDate.setFullYear(2000); // "all" — viss
+
+  const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+  // Mēneša un gada string priekš vaicājumiem
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const prevMM = String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, "0");
+  const prevYYYY = now.getMonth() === 0 ? yyyy - 1 : yyyy;
+
+  const dateHint = dateFilter === "day"
+    ? `${yyyy}-${mm}-${String(now.getDate()).padStart(2,"0")}`
+    : dateFilter === "week"
+    ? `${yyyy} ${mm}`
+    : `${yyyy}-${mm} VAI ${prevYYYY}-${prevMM}`;
+
   const searchGroups = [
     {
       searches: [
-        `${query} Latvija jaunākās ziņas 2026`,
-        `${query} Latvia latest news 2026`,
-        `${query} Latvija šodien`,
+        `${query} Latvija ${yyyy}-${mm}`,
+        `${query} Latvia ${yyyy}-${mm}`,
+        `${query} Latvija šodien ${yyyy}`,
       ]
     },
     {
       searches: [
-        `${query} delfi apollo lsm latvija`,
-        `${query} site:delfi.lv OR site:lsm.lv OR site:apollo.lv OR site:tvnet.lv`,
-        `${query} site:jauns.lv OR site:nra.lv OR site:ir.lv OR site:skaties.lv`,
+        `${query} site:delfi.lv after:${cutoffStr}`,
+        `${query} site:lsm.lv after:${cutoffStr}`,
+        `${query} site:apollo.lv after:${cutoffStr}`,
       ]
     },
     {
       searches: [
-        `${query} Latvijas televīzija LTV raidījums`,
-        `${query} Latvijas Radio LR podkāsts`,
-        `${query} site:ltv.lv OR site:lr.lv OR site:replay.lsm.lv`,
+        `${query} site:tvnet.lv after:${cutoffStr}`,
+        `${query} site:jauns.lv after:${cutoffStr}`,
+        `${query} site:nra.lv OR site:ir.lv after:${cutoffStr}`,
       ]
     },
     {
       searches: [
-        `${query} youtube latvija latvieši`,
-        `${query} youtube latvia channel 2026`,
-        `${query} instagram tiktok latvija 2026`,
+        `${query} Latvijas televīzija LTV ${yyyy}`,
+        `${query} Latvijas radio LR ${yyyy}`,
+        `${query} site:replay.lsm.lv after:${cutoffStr}`,
       ]
     },
     {
       searches: [
-        `${query} Latvija facebook twitter`,
-        `${query} latvia reddit forum 2026`,
-        `${query} "${query}" latvija -site:wikipedia.org`,
+        `${query} youtube latvia ${yyyy}-${mm}`,
+        `${query} Latvija facebook twitter ${yyyy}-${mm}`,
+        `${query} Latvija instagram tiktok ${yyyy}`,
       ]
     }
   ];
 
   const makePrompt = (group) => `Tu esi Latvijas mediju meklēšanas sistēma. Šodienas datums: ${today}.
 
-Meklē VISUS iespējamos rezultātus par: "${query}" no JEBKURA avota kas saistīts ar Latviju.
+Meklē rezultātus par: "${query}"
+SVARĪGI: Atgriezies TIKAI ar rezultātiem kas publicēti PĒC ${cutoffStr}. Vecākus rezultātus IGNORĒ.
 
-Izmanto web_search rīku un veic šos vaicājumus:
+Izmanto web_search un veic šos vaicājumus:
 ${group.searches.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-SVARĪGI:
-- Meklē VISOS avotos — ziņu portāli, blogi, forumi, sociālie tīkli, video, podkāsti, valdības lapas, u.c.
-- Nav ierobežojumu par avotu — ja tas ir saistīts ar Latviju un satur "${query}", iekļauj to
-- Prioritizē jaunāko saturu (2026. gads)
-- Iekļauj arī krievu un angļu valodas avotus par Latviju
+Ja meklēšana neatgriež jaunus rezultātus (pēc ${cutoffStr}), raksti tukšu masīvu: []
 
 Atgriezies TIKAI ar JSON masīvu:
 [{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"virsraksts","excerpt":"2-3 teikumi latviešu valodā","date":"${today}","dateLabel":"Šodien","url":"https://...","timestamps":null,"relevance":85,"lang":"lv"}]
 
-Vērtību saraksti:
+Noteikumi:
 - type: "article","video","audio","social"
 - source: "delfi","lsm","apollo","tvnet","jauns","ltv","lr","youtube","social","other"
 - lang: "lv","ru","en"
 - timestamps: null vai [{time:"MM:SS",text:"..."}] tikai video/audio
 - dateLabel: "Šodien","Vakar","X dienas atpakaļ","X nedēļas atpakaļ"
-- Ja avots nav sarakstā — izmanto "other" un norādi īsto nosaukumu sourceName laukā
+- date: OBLIGĀTI precīzs datums formātā YYYY-MM-DD — ja nezini precīzi, norādi aptuveni
+- NEIEKĻAUJ rezultātus kas vecāki par ${cutoffStr}
 
-Atgriezies ar 10-15 rezultātiem. Jaunākie pirmie. TIKAI JSON!`;
+Atgriezies ar 8-12 jaunākajiem rezultātiem. TIKAI JSON!`;
 
   const callAPI = async (group) => {
     try {
@@ -97,7 +117,6 @@ Atgriezies ar 10-15 rezultātiem. Jaunākie pirmie. TIKAI JSON!`;
       });
 
       if (!response.ok) return [];
-
       const data = await response.json();
       const text = (data.content || [])
         .filter((b) => b.type === "text")
@@ -113,11 +132,10 @@ Atgriezies ar 10-15 rezultātiem. Jaunākie pirmie. TIKAI JSON!`;
   };
 
   try {
-    // Visi 5 izsaukumi paralēli
     const allResults = await Promise.all(searchGroups.map(callAPI));
     const combined = allResults.flat();
 
-    // Noņem dublikātus pēc URL un virsraksta
+    // Noņem dublikātus
     const seen = new Set();
     const unique = combined.filter((r) => {
       const key = (r.url || "") + (r.title || "");
@@ -126,8 +144,14 @@ Atgriezies ar 10-15 rezultātiem. Jaunākie pirmie. TIKAI JSON!`;
       return true;
     });
 
-    // Unikāli ID un sakārtoti — jaunākie pirmie
-    const final = unique
+    // Filtrē pēc datuma serverī arī
+    const filtered = unique.filter((r) => {
+      if (dateFilter === "all" || !r.date) return true;
+      return r.date >= cutoffStr;
+    });
+
+    // Sakārto — jaunākie pirmie
+    const final = filtered
       .map((r, i) => ({ ...r, id: i + 1 }))
       .sort((a, b) => {
         if (a.date && b.date && a.date !== b.date) return b.date.localeCompare(a.date);
