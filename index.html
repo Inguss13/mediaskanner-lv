@@ -290,7 +290,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => { if(e.k
 // ── filters ───────────────────────────────────────────────────────────────────
 function setType(el){document.querySelectorAll('[data-type]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.type=el.dataset.type;if(ST.results.length)render();}
 function setLang(el){document.querySelectorAll('[data-lang]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.lang=el.dataset.lang;if(ST.results.length)render();}
-function setDate(el){document.querySelectorAll('[data-d]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.date=el.dataset.d;if(ST.results.length)render();}
+function setDate(el){document.querySelectorAll("[data-d]").forEach(b=>b.classList.remove("on"));el.classList.add("on");ST.date=el.dataset.d;if(ST.q)doSearch();}
 function setSort(el){document.querySelectorAll('[data-s]').forEach(b=>b.classList.remove('on'));el.classList.add('on');ST.sort=el.dataset.s;render();}
 function toggleSrc(el){
   const s=el.dataset.src;
@@ -323,7 +323,7 @@ async function doSearch(){
     const resp = await fetch('/api/search',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({query:q})
+      body: JSON.stringify({query:q, dateFilter:ST.date||"all"})
     });
 
     timers.forEach(clearTimeout);
