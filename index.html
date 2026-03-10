@@ -320,7 +320,7 @@ async function doSearch(){
   );
 
   try {
-    const resp = await fetch('/api/search',{
+    const resp = await fetch('/api/search-v2',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({query:q, dateFilter:ST.date||"all"})
