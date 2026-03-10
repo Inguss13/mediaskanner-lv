@@ -72,7 +72,6 @@ Noteikumi:
     } catch { return []; }
   }
 
-  // 3 paralēli izsaukumi — sabalansēts starp kvalitāti un izmaksām
   const groups = [
     {
       hint: "Ziņu portāli",
