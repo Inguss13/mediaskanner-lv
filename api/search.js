@@ -40,8 +40,8 @@ Atgriezies TIKAI ar JSON masīvu bez jebkāda cita teksta:
 
 Noteikumi:
 - type: article, video, audio vai social
-- source: izmanto avota nosaukumu bez atstarpēm mazajiem burtiem (delfi, lsm, apollo, tv3, re_tv, ltv, lr, radio_skonto, star_fm, europapluss, tvnet, jauns, nra, ir, pietiek, apollo, youtube, facebook, twitter, tiktok, other)
-- sourceName: pilns avota nosaukums (Delfi.lv, TV3, Re:TV, LTV1, LR1 u.c.)
+- source: delfi, lsm, apollo, tvnet, jauns, nra, ir, ltv, lr, tv3, retv, radio_skonto, star_fm, youtube, social, other
+- sourceName: pilns avota nosaukums
 - lang: lv, ru vai en
 - date: TIKAI datums ko redzi avotā — ja nezini raksti null
 - dateLabel: "Šodien", "Vakar", "X dienas atpakaļ", "X nedēļas atpakaļ"
@@ -56,8 +56,8 @@ Noteikumi:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 8000,
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 4000,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           messages: [{ role: "user", content: prompt }],
         }),
@@ -72,11 +72,8 @@ Noteikumi:
     } catch { return []; }
   }
 
-  // ── 6 paralēlas meklēšanas grupas ────────────────────────────────────────
-
+  // 3 paralēli izsaukumi — sabalansēts starp kvalitāti un izmaksām
   const groups = [
-
-    // 1. Lielākie ziņu portāli
     {
       hint: "Ziņu portāli",
       searches: [
@@ -84,77 +81,37 @@ Noteikumi:
         `${query} site:lsm.lv`,
         `${query} site:apollo.lv`,
         `${query} site:tvnet.lv`,
-      ]
-    },
-
-    // 2. Citi ziņu portāli un nedēļas žurnāli
-    {
-      hint: "Portāli un preses izdevumi",
-      searches: [
         `${query} site:jauns.lv`,
         `${query} site:nra.lv`,
-        `${query} site:ir.lv`,
-        `${query} site:pietiek.com`,
       ]
     },
-
-    // 3. Latvijas TV kanāli
     {
-      hint: "Latvijas televīzija",
+      hint: "TV, Radio un video",
       searches: [
         `${query} site:ltv.lv OR site:replay.lsm.lv`,
         `${query} site:tv3.lv OR site:play.tv3.lv`,
-        `${query} site:re-tv.lv OR site:retv.lv`,
-        `${query} TV3 Latvija ziņas ${yyyy}`,
-        `${query} Re:TV Latvija ${yyyy}`,
-        `${query} LTV1 LTV7 sižets ${yyyy}`,
+        `${query} Re:TV TV3 LTV ziņas Latvija ${yyyy}`,
+        `${query} Latvijas Radio LR1 LR2 Radio Skonto ${yyyy}`,
+        `${query} youtube Latvija ${yyyy}`,
       ]
     },
-
-    // 4. Latvijas radio stacijas
     {
-      hint: "Latvijas radio",
+      hint: "Vispārēja un sociālie tīkli",
       searches: [
-        `${query} site:lr.lv`,
-        `${query} Latvijas Radio LR1 LR2 LR4 ${yyyy}`,
-        `${query} Radio Skonto ${yyyy}`,
-        `${query} Star FM Latvija ${yyyy}`,
-        `${query} Europa Plus Latvija ${yyyy}`,
-        `${query} Eiropas Hītu Radio EHR ${yyyy}`,
-      ]
-    },
-
-    // 5. YouTube un video saturs
-    {
-      hint: "YouTube un video",
-      searches: [
-        `${query} youtube.com Latvija ${yyyy}`,
-        `${query} youtube TV3 Latvija ziņas`,
-        `${query} youtube LTV Panorāma`,
-        `${query} youtube Re:TV Latvija`,
-      ]
-    },
-
-    // 6. Sociālie tīkli un vispārēja meklēšana
-    {
-      hint: "Sociālie tīkli un vispārēji",
-      searches: [
-        `${query} Latvija ${yyyy}-${mm} ziņas`,
+        `${query} Latvija ziņas ${yyyy}-${mm}`,
         `${query} Latvia news ${yyyy}`,
         `${query} Latvija facebook twitter instagram ${yyyy}`,
-        `${query} Latvija tiktok ${yyyy}`,
+        `${query} site:ir.lv OR site:pietiek.com`,
       ]
     },
   ];
 
   try {
-    // Visi 6 izsaukumi paralēli
     const allResults = await Promise.all(
       groups.map((g) => callAPI(g.searches, g.hint))
     );
     const combined = allResults.flat();
 
-    // Noņem dublikātus
     const seen = new Set();
     const unique = combined.filter((r) => {
       if (!r || typeof r !== "object" || !r.title) return false;
@@ -164,7 +121,6 @@ Noteikumi:
       return true;
     });
 
-    // Sakārto — jaunākie pirmie, tad pēc atbilstības
     const final = unique
       .map((r, i) => ({ ...r, id: i + 1 }))
       .sort((a, b) => {
