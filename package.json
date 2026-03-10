@@ -2,5 +2,6 @@
   "name": "mediaskanner-lv",
   "version": "1.0.0",
   "description": "Latvijas mediju meklēšanas rīks",
-  "engines": { "node": ">=18" }
+  "type": "module",
+  "engines": { "node": "22" }
 }
