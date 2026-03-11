@@ -926,10 +926,6 @@ header {
         <span class="logo-name">MEDIA<em>SKANNER</em></span>
       </a>
       <div class="header-right">
-        <div class="live-badge">
-          <div class="live-dot"></div>
-          Tiešraide
-        </div>
         <div class="header-date" id="headerDate"></div>
       </div>
     </div>
@@ -957,7 +953,7 @@ header {
         <div class="filter-group">
           <button class="ftab on" data-lang="all" onclick="setLang(this)">Visas</button>
           <button class="ftab" data-lang="lv" onclick="setLang(this)">LV</button>
-          <button class="ftab" data-lang="ru" onclick="setLang(this)">RU</button>
+          
           <button class="ftab" data-lang="en" onclick="setLang(this)">EN</button>
         </div>
       </div>
@@ -1016,8 +1012,16 @@ header {
         <span class="source-name"><span class="source-dot" style="background:#e63946"></span>YouTube LV</span>
         <div class="source-toggle"></div>
       </div>
+      <div class="source-item on" data-src="instagram" onclick="toggleSrc(this)">
+        <span class="source-name"><span class="source-dot" style="background:#e1306c"></span>Instagram</span>
+        <div class="source-toggle"></div>
+      </div>
+      <div class="source-item on" data-src="facebook" onclick="toggleSrc(this)">
+        <span class="source-name"><span class="source-dot" style="background:#1877f2"></span>Facebook</span>
+        <div class="source-toggle"></div>
+      </div>
       <div class="source-item on" data-src="social" onclick="toggleSrc(this)">
-        <span class="source-name"><span class="source-dot" style="background:#4caf50"></span>Sociālie</span>
+        <span class="source-name"><span class="source-dot" style="background:#4caf50"></span>X / TikTok</span>
         <div class="source-toggle"></div>
       </div>
       <div class="source-item on" data-src="other" onclick="toggleSrc(this)">
@@ -1032,8 +1036,6 @@ header {
 
     <!-- INITIAL -->
     <div id="vInitial">
-      <div class="hero-eyebrow">
-        <div class="live-dot"></div>
         AI meklēšana · Latvijas mediji
       </div>
       <div class="hero-title">Atrodi <em>visu</em><br>Latvijas mediju<br>telpā</div>
@@ -1116,7 +1118,7 @@ header {
 <script>
 const ST = {
   q: '', results: [], type: 'all', lang: 'all', date: 'all', sort: 'date',
-  srcs: new Set(['delfi','lsm','apollo','tvnet','jauns','ltv','lr','tv3','retv','youtube','social','other'])
+  srcs: new Set(['delfi','lsm','apollo','tvnet','jauns','ltv','lr','tv3','retv','youtube','instagram','facebook','social','other'])
 };
 
 const d = new Date();
