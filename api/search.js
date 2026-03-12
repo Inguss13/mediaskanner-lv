@@ -13,21 +13,25 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: "API key nav konfigurēta" });
 
   const today = new Date().toISOString().split("T")[0];
+  const yyyy = new Date().getFullYear();
 
-  try {
-    const prompt = `Tu esi Latvijas mediju meklēšanas sistēma. Šodienas datums: ${today}.
+  function extractJSON(text) {
+    const start = text.indexOf("[");
+    const end = text.lastIndexOf("]");
+    if (start === -1 || end === -1 || end <= start) return [];
+    try {
+      const parsed = JSON.parse(text.slice(start, end + 1));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
 
-Meklē informāciju par: "${query}" Latvijas medijos.
-
-Izmanto web_search un meklē:
-1. ${query} site:delfi.lv
-2. ${query} site:lsm.lv
-3. ${query} Latvija ziņas
-
-Atgriezies TIKAI ar JSON masīvu:
-[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"...","excerpt":"...","date":null,"dateLabel":"Šodien","url":"https://...","relevance":85,"lang":"lv"}]
-
-TIKAI JSON bez cita teksta!`;
+  async function callAPI(searches) {
+    const prompt = `Latvijas mediju meklēšana. Datums: ${today}.
+Meklē: "${query}"
+Veic šos meklējumus: ${searches.join(" | ")}
+Atgriezies TIKAI ar JSON:
+[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"...","excerpt":"...","date":"2026-03-12","dateLabel":"Šodien","url":"https://...","relevance":85,"lang":"lv"}]
+type=article/video/audio/social. date=null ja nezini. Jaunākie rezultāti pirmie. Max 6 rezultāti. TIKAI JSON!`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -44,43 +48,60 @@ TIKAI JSON bez cita teksta!`;
       }),
     });
 
-    const data = await response.json();
-
-    // DEBUG — atgriežam visu raw atbildi lai redzam kas notiek
     if (!response.ok) {
-      return res.status(200).json({ debug: true, error: data, results: [], total: 0 });
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
     }
+    const data = await response.json();
+    const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    return extractJSON(text);
+  }
 
-    const allBlocks = data.content || [];
-    const textBlocks = allBlocks.filter(b => b.type === "text").map(b => b.text);
-    const fullText = textBlocks.join("");
+  try {
+    // 1. izsaukums: ziņu portāli
+    const r1 = await callAPI([
+      `${query} site:delfi.lv`,
+      `${query} site:apollo.lv`,
+      `${query} site:tvnet.lv`,
+    ]);
 
-    const start = fullText.indexOf("[");
-    const end = fullText.lastIndexOf("]");
-    let results = [];
+    // Pauze starp izsaukumiem lai izvairītos no rate limit
+    await new Promise(r => setTimeout(r, 1500));
 
-    if (start !== -1 && end !== -1 && end > start) {
-      try {
-        results = JSON.parse(fullText.slice(start, end + 1));
-      } catch(e) {
-        return res.status(200).json({ 
-          debug: true, 
-          parseError: e.message,
-          rawText: fullText.slice(0, 500),
-          results: [], 
-          total: 0 
-        });
-      }
-    }
+    // 2. izsaukums: LSM + TV/Radio
+    const r2 = await callAPI([
+      `${query} site:lsm.lv`,
+      `${query} site:jauns.lv OR site:nra.lv`,
+      `${query} LTV TV3 Latvijas Radio ${yyyy}`,
+    ]);
 
-    return res.status(200).json({ 
-      debug: true,
-      blockTypes: allBlocks.map(b => b.type),
-      textLength: fullText.length,
-      foundBrackets: start !== -1,
-      results: Array.isArray(results) ? results : [],
-      total: Array.isArray(results) ? results.length : 0
+    await new Promise(r => setTimeout(r, 1500));
+
+    // 3. izsaukums: YouTube + sociālie
+    const r3 = await callAPI([
+      `${query} site:ir.lv OR site:pietiek.com`,
+      `${query} youtube Latvia ${yyyy}`,
+      `${query} Instagram Facebook Latvija ${yyyy}`,
+    ]);
+
+    const combined = [...r1, ...r2, ...r3];
+    const seen = new Set();
+    const unique = combined.filter((r) => {
+      if (!r || typeof r !== "object" || !r.title) return false;
+      const key = (r.url || r.title).toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
+
+    const final = unique
+      .map((r, i) => ({ ...r, id: i + 1 }))
+      .sort((a, b) => {
+        if (a.date && b.date && a.date !== b.date) return b.date.localeCompare(a.date);
+        return (b.relevance || 0) - (a.relevance || 0);
+      });
+
+    return res.status(200).json({ results: final, total: final.length });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
