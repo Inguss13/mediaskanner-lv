@@ -26,64 +26,60 @@ export default async function handler(req, res) {
   }
 
   async function callAPI(searches) {
-    const prompt = `Latvijas mediju meklēšana. Datums: ${today}.
-Meklē: "${query}"
+    const prompt = `Tu esi Latvijas mediju meklēšanas sistēma. Šodienas datums: ${today}.
 
-Veic šos meklējumus:
+Meklē informāciju par: "${query}"
+
+Veic šos web_search meklējumus:
 ${searches.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-Atgriezies TIKAI ar JSON masīvu:
-[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"...","excerpt":"...","date":"2026-03-01","dateLabel":"Šodien","url":"https://...","relevance":85,"lang":"lv"}]
+Pēc meklēšanas atgriezies TIKAI ar JSON masīvu, bez jebkāda cita teksta:
+[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"raksta virsraksts","excerpt":"īss apraksts latviski","date":"2026-03-01","dateLabel":"Šodien","url":"https://delfi.lv/raksts","relevance":85,"lang":"lv"}]
 
-type: article/video/audio/social. source: delfi/lsm/apollo/tvnet/jauns/nra/ir/ltv/lr/tv3/youtube/social/other. date: null ja nezini. Max 6 rezultāti.`;
+Lauki: type=article/video/audio/social, source=delfi/lsm/apollo/tvnet/jauns/nra/ltv/lr/tv3/youtube/social/other, date=null ja nezini. Atgriezies ar 5-8 rezultātiem. TIKAI JSON!`;
 
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 3000,
-          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      const text = (data.content || [])
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
-        .join("");
-      return extractJSON(text);
-    } catch (e) {
-      console.error("callAPI error:", e.message);
-      return [];
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 4000,
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
     }
+
+    const data = await response.json();
+    const text = (data.content || [])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+    return extractJSON(text);
   }
 
-  const groups = [
-    [
+  // 2 secīgi izsaukumi — nevis paralēli, lai izvairītos no rate limit
+  try {
+    const results1 = await callAPI([
       `${query} site:delfi.lv`,
       `${query} site:lsm.lv`,
       `${query} site:apollo.lv`,
-    ],
-    [
-      `${query} site:tvnet.lv OR site:jauns.lv`,
-      `${query} Latvija LTV LR TV3 ${yyyy}`,
-      `${query} Latvija ziņas ${yyyy}`,
-    ],
-  ];
+    ]);
 
-  try {
-    const allResults = await Promise.all(groups.map(callAPI));
-    const combined = allResults.flat();
+    const results2 = await callAPI([
+      `${query} site:tvnet.lv OR site:jauns.lv`,
+      `${query} Latvija LTV TV3 ziņas ${yyyy}`,
+    ]);
+
+    const combined = [...results1, ...results2];
 
     const seen = new Set();
     const unique = combined.filter((r) => {
