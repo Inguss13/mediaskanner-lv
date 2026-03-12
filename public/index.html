@@ -1067,7 +1067,7 @@ header {
     </div>
 
     <!-- LOADING -->
-    <div id="vLoading">
+    <div id="vLoading" style="display:none">
       <div class="load-top">
         <div class="spinner"></div>
         <div class="load-title">Meklē Latvijas medijos...</div>
@@ -1077,7 +1077,7 @@ header {
     </div>
 
     <!-- RESULTS -->
-    <div id="vResults">
+    <div id="vResults" style="display:none">
       <div class="results-bar">
         <div class="results-title">Rezultāti: <em id="resQuery"></em></div>
         <div class="results-count">
@@ -1093,7 +1093,7 @@ header {
     </div>
 
     <!-- EMPTY -->
-    <div id="vEmpty">
+    <div id="vEmpty" style="display:none">
       <div class="state-box">
         <div class="state-icon">🔍</div>
         <div class="state-title">Nekas netika atrasts</div>
@@ -1102,7 +1102,7 @@ header {
     </div>
 
     <!-- ERROR -->
-    <div id="vError">
+    <div id="vError" style="display:none">
       <div class="state-box">
         <div class="state-icon">⚠️</div>
         <div class="state-title err">Meklēšanas kļūda</div>
@@ -1278,7 +1278,7 @@ function cardHTML(r, i) {
 function show(name) {
   ['Initial','Loading','Results','Empty','Error'].forEach(n => {
     const el = document.getElementById('v' + n);
-    el.style.display = n === name ? '' : 'none';
+    el.style.display = n === name ? 'block' : 'none';
   });
 }
 </script>
