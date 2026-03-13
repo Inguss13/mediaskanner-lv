@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: "No API key" });
 
   const today = new Date().toISOString().split("T")[0];
+  const yyyy = new Date().getFullYear();
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -23,23 +24,31 @@ export default async function handler(req, res) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 5000,
+      max_tokens: 6000,
       tools: [{ type: "web_search_20250305", name: "web_search" }],
       messages: [{
         role: "user",
-        content: `Šodienas datums: ${today}. Meklē "${query}" Latvijas medijos.
+        content: `Šodienas datums: ${today}. Meklē "${query}" Latvijas mediju telpā.
 
-Veic 4 web_search meklējumus:
-1. ${query} site:delfi.lv
-2. ${query} site:lsm.lv OR site:apollo.lv
-3. ${query} site:tvnet.lv OR site:jauns.lv
-4. ${query} Latvija ziņas
+Veic VISUS šos 6 web_search meklējumus:
+1. ${query} site:delfi.lv OR site:apollo.lv OR site:tvnet.lv
+2. ${query} site:lsm.lv OR site:jauns.lv OR site:nra.lv
+3. ${query} LTV sižets video ${yyyy} site:ltv.lv OR site:replay.lsm.lv
+4. ${query} TV3 video sižets ${yyyy} site:tv3play.lv OR site:tv3.lv
+5. ${query} youtube.com Latvija latvian ${yyyy}
+6. ${query} instagram.com OR facebook.com Latvija ${yyyy}
 
-Atgriezies TIKAI ar JSON masīvu (bez cita teksta):
-[{"id":1,"type":"article","source":"delfi","sourceName":"Delfi.lv","title":"...","excerpt":"...","date":"2026-03-12","dateLabel":"Šodien","url":"https://delfi.lv/...","relevance":90,"lang":"lv"}]
+Katram rezultātam norādi PRECĪZU tipu:
+- type="article" — teksta raksts ziņu portālā
+- type="video" — TV sižets, YouTube video, tiešsaistes video
+- type="audio" — radio raidījums, podcast
+- type="social" — Instagram, Facebook, TikTok, Twitter ieraksts
 
-Pieņemamie source vērtības: delfi, lsm, apollo, tvnet, jauns, nra, ir, ltv, lr, tv3, youtube, social, other
-Ja datums nav zināms, raksti null. Atgriezies ar 8-15 rezultātiem no dažādiem avotiem.`
+Atgriezies TIKAI ar JSON masīvu:
+[{"id":1,"type":"video","source":"ltv","sourceName":"LTV","title":"...","excerpt":"...","date":"${today}","dateLabel":"Šodien","url":"https://...","relevance":90,"lang":"lv"}]
+
+source vērtības: delfi, lsm, apollo, tvnet, jauns, nra, ir, ltv, lr, tv3, youtube, instagram, facebook, social, other
+Atgriezies ar 10-15 rezultātiem no DAŽĀDIEM avotiem un DAŽĀDIEM tipiem. TIKAI JSON!`
       }]
     }),
   });
@@ -71,13 +80,15 @@ Ja datums nav zināms, raksti null. Atgriezies ar 8-15 rezultātiem no dažādie
   }
 
   const seen = new Set();
-  const unique = results.filter(r => {
-    if (!r?.title) return false;
-    const key = (r.url || r.title).toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).map((r, i) => ({ ...r, id: i + 1 }))
+  const unique = results
+    .filter(r => {
+      if (!r?.title) return false;
+      const key = (r.url || r.title).toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((r, i) => ({ ...r, id: i + 1 }))
     .sort((a, b) => {
       if (a.date && b.date) return b.date.localeCompare(a.date);
       return (b.relevance || 0) - (a.relevance || 0);
