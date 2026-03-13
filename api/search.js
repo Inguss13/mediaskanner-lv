@@ -35,20 +35,37 @@ Veic VISUS šos 6 web_search meklējumus:
 2. ${query} site:lsm.lv OR site:jauns.lv OR site:nra.lv
 3. ${query} LTV sižets video ${yyyy} site:ltv.lv OR site:replay.lsm.lv
 4. ${query} TV3 video sižets ${yyyy} site:tv3play.lv OR site:tv3.lv
-5. ${query} youtube.com Latvija latvian ${yyyy}
+5. ${query} youtube.com Latvija ${yyyy}
 6. ${query} instagram.com OR facebook.com Latvija ${yyyy}
 
-Katram rezultātam norādi PRECĪZU tipu:
-- type="article" — teksta raksts ziņu portālā
-- type="video" — TV sižets, YouTube video, tiešsaistes video
-- type="audio" — radio raidījums, podcast
-- type="social" — Instagram, Facebook, TikTok, Twitter ieraksts
+SVARĪGI par laikspiedoliem (timestamps):
+- Ja YouTube video aprakstā vai lapā ir redzami laikspiedoli (piemēram "03:24 - tēma"), iekļauj tos laukā "timestamps"
+- Ja LSM/LTV lapā ir norādīts konkrēts laiks kad sākas tēma, iekļauj to
+- Ja laikspiedoli NAV atrasti — raksti timestamps: null (NEIZDOMĀ!)
 
 Atgriezies TIKAI ar JSON masīvu:
-[{"id":1,"type":"video","source":"ltv","sourceName":"LTV","title":"...","excerpt":"...","date":"${today}","dateLabel":"Šodien","url":"https://...","relevance":90,"lang":"lv"}]
+[{
+  "id": 1,
+  "type": "video",
+  "source": "ltv",
+  "sourceName": "LTV",
+  "title": "...",
+  "excerpt": "...",
+  "date": "${today}",
+  "dateLabel": "Šodien",
+  "url": "https://...",
+  "relevance": 90,
+  "lang": "lv",
+  "timestamps": [
+    {"time": "03:24", "text": "Tēmas apraksts"},
+    {"time": "07:15", "text": "Vēl viena daļa"}
+  ]
+}]
 
-source vērtības: delfi, lsm, apollo, tvnet, jauns, nra, ir, ltv, lr, tv3, youtube, instagram, facebook, social, other
-Atgriezies ar 10-15 rezultātiem no DAŽĀDIEM avotiem un DAŽĀDIEM tipiem. TIKAI JSON!`
+Ja laikspiedoli nav atrasti: "timestamps": null
+type: article/video/audio/social
+source: delfi/lsm/apollo/tvnet/jauns/nra/ir/ltv/lr/tv3/youtube/instagram/facebook/social/other
+Atgriezies ar 10-15 rezultātiem no dažādiem avotiem. TIKAI JSON!`
       }]
     }),
   });
