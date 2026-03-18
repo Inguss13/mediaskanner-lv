@@ -757,6 +757,23 @@ header {
 .badge.social  { background: rgba(245,166,35,0.15); color: #b87d10;     border: 1px solid rgba(245,166,35,0.25); }
 .badge.src     { background: rgba(0,0,0,0.05);      color: var(--mid);  border: 1px solid rgba(0,0,0,0.08); }
 
+.src-favicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.card-source-favicon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .card-meta-right {
   display: flex;
   align-items: center;
@@ -1277,6 +1294,22 @@ function cardHTML(r, i) {
     youtube:'#ff0000', instagram:'#e1306c', facebook:'#1877f2',
     social:'#4caf50', other:'#607d8b'
   };
+  const srcFavicons = {
+    delfi:     'https://www.google.com/s2/favicons?domain=delfi.lv&sz=32',
+    lsm:       'https://www.google.com/s2/favicons?domain=lsm.lv&sz=32',
+    apollo:    'https://www.google.com/s2/favicons?domain=apollo.lv&sz=32',
+    tvnet:     'https://www.google.com/s2/favicons?domain=tvnet.lv&sz=32',
+    jauns:     'https://www.google.com/s2/favicons?domain=jauns.lv&sz=32',
+    ltv:       'https://www.google.com/s2/favicons?domain=ltv.lv&sz=32',
+    lr:        'https://www.google.com/s2/favicons?domain=latvijasradio.lv&sz=32',
+    tv3:       'https://www.google.com/s2/favicons?domain=tv3.lv&sz=32',
+    nra:       'https://www.google.com/s2/favicons?domain=nra.lv&sz=32',
+    ir:        'https://www.google.com/s2/favicons?domain=ir.lv&sz=32',
+    youtube:   'https://www.google.com/s2/favicons?domain=youtube.com&sz=32',
+    instagram: 'https://www.google.com/s2/favicons?domain=instagram.com&sz=32',
+    facebook:  'https://www.google.com/s2/favicons?domain=facebook.com&sz=32',
+    social:    'https://www.google.com/s2/favicons?domain=x.com&sz=32',
+  };
 
   const ts = r.timestamps?.length ? `
     <div class="ts-block">
@@ -1293,7 +1326,14 @@ function cardHTML(r, i) {
   const relClass = rel >= 75 ? 'high' : rel >= 45 ? 'med' : '';
   const delay = Math.min(i * 0.05, 0.5);
   const srcColor = srcColors[r.source] || '#607d8b';
+  const favicon = srcFavicons[r.source] || '';
   const type = r.type || 'article';
+  const faviconImg = favicon
+    ? `<img class="src-favicon" src="${favicon}" alt="" onerror="this.style.display='none'">`
+    : '';
+  const faviconLg = favicon
+    ? `<img class="card-source-favicon" src="${favicon}" alt="" onerror="this.style.display='none'">`
+    : `<span class="card-source-dot" style="background:${srcColor}"></span>`;
 
   return `<div class="card ${type}" style="animation-delay:${delay}s">
     <div class="card-stripe"></div>
@@ -1301,7 +1341,7 @@ function cardHTML(r, i) {
       <div class="card-head">
         <div class="card-badges">
           <span class="badge ${type}">${typeIcon[type]||'📰'} ${typeLabel[type]||'RAKSTS'}</span>
-          <span class="badge src">${r.sourceName||r.source||''}</span>
+          <span class="badge src">${faviconImg}${r.sourceName||r.source||''}</span>
           ${r.lang ? `<span class="badge src">${r.lang.toUpperCase()}</span>` : ''}
         </div>
         <div class="card-meta-right">
@@ -1318,7 +1358,7 @@ function cardHTML(r, i) {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
         <div class="card-source-row">
-          <span class="card-source-dot" style="background:${srcColor}"></span>
+          ${faviconLg}
           <span>${r.sourceName||r.source||''}</span>
         </div>
       </div>
