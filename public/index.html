@@ -681,65 +681,88 @@ header {
 .sort-btn.on { background: var(--ink); color: var(--white); font-weight: 600; }
 
 /* ── CARDS ── */
-.results-list { display: flex; flex-direction: column; gap: 12px; }
+.results-list { display: flex; flex-direction: column; gap: 14px; }
 
 .card {
   background: var(--glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 16px;
-  padding: 20px 24px;
-  transition: all 0.2s;
+  border-radius: 18px;
+  padding: 0;
+  transition: all 0.22s;
   animation: cardIn 0.3s ease both;
   box-shadow: var(--shadow2);
   position: relative;
   overflow: hidden;
+  display: flex;
 }
 
-.card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--red), var(--orange));
-  opacity: 0;
-  transition: opacity 0.2s;
-  border-radius: 3px 0 0 3px;
+.card-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 18px 0 0 18px;
+  background: var(--rule);
+  transition: background 0.2s;
 }
 
-.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: rgba(255,255,255,0.9); }
-.card:hover::before { opacity: 1; }
+.card.article .card-stripe { background: linear-gradient(180deg, var(--blue), #3a6cc8); }
+.card.video .card-stripe { background: linear-gradient(180deg, var(--red), var(--orange)); }
+.card.audio .card-stripe { background: linear-gradient(180deg, var(--green), #2ab86e); }
+.card.social .card-stripe { background: linear-gradient(180deg, #b87d10, var(--orange)); }
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 22px 18px;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: rgba(255,255,255,0.95);
+}
 
 @keyframes cardIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
 }
 
 .card-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
-.card-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.card-badges { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
 .badge {
   font-family: 'Syne', sans-serif;
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.badge.article { background: rgba(26,74,138,0.12); color: var(--blue); }
-.badge.video { background: rgba(232,50,26,0.12); color: var(--red); }
-.badge.audio { background: rgba(26,122,74,0.12); color: var(--green); }
-.badge.social { background: rgba(245,166,35,0.15); color: #b87d10; }
-.badge.src { background: rgba(0,0,0,0.06); color: var(--mid); }
+.badge.article { background: rgba(26,74,138,0.13); color: var(--blue); border: 1px solid rgba(26,74,138,0.18); }
+.badge.video   { background: rgba(232,50,26,0.12);  color: var(--red);  border: 1px solid rgba(232,50,26,0.2); }
+.badge.audio   { background: rgba(26,122,74,0.12);  color: var(--green);border: 1px solid rgba(26,122,74,0.2); }
+.badge.social  { background: rgba(245,166,35,0.15); color: #b87d10;     border: 1px solid rgba(245,166,35,0.25); }
+.badge.src     { background: rgba(0,0,0,0.05);      color: var(--mid);  border: 1px solid rgba(0,0,0,0.08); }
+
+.card-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
 .card-date {
   font-size: 11px;
@@ -748,22 +771,42 @@ header {
   white-space: nowrap;
 }
 
+.rel-pill {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.05);
+  color: var(--mid);
+  white-space: nowrap;
+}
+.rel-pill.high { background: rgba(26,122,74,0.12); color: var(--green); }
+.rel-pill.med  { background: rgba(245,166,35,0.15); color: #b87d10; }
+
 .card-title {
   font-family: 'DM Serif Display', serif;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 400;
   color: var(--ink);
-  line-height: 1.35;
-  margin-bottom: 8px;
-  letter-spacing: -0.2px;
+  line-height: 1.3;
+  margin-bottom: 9px;
+  letter-spacing: -0.3px;
 }
+
+.card-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.card-title a:hover { color: var(--red); }
 
 .card-title mark { background: rgba(245,166,35,0.3); color: inherit; border-radius: 2px; padding: 0 2px; }
 
 .card-excerpt {
   font-size: 14px;
   color: var(--ink2);
-  line-height: 1.65;
+  line-height: 1.7;
   margin-bottom: 14px;
   font-weight: 300;
 }
@@ -772,10 +815,10 @@ header {
 
 /* Timestamps */
 .ts-block {
-  background: rgba(26,74,138,0.06);
-  border: 1px solid rgba(26,74,138,0.15);
+  background: rgba(26,74,138,0.05);
+  border: 1px solid rgba(26,74,138,0.13);
   border-radius: 10px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   margin-bottom: 14px;
 }
 
@@ -792,9 +835,9 @@ header {
 .ts-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 6px 0;
-  border-top: 1px solid rgba(26,74,138,0.08);
+  border-top: 1px solid rgba(26,74,138,0.07);
   font-size: 13px;
 }
 
@@ -830,46 +873,37 @@ header {
 .card-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 12px;
   font-weight: 600;
   font-family: 'Syne', sans-serif;
   letter-spacing: 0.5px;
-  color: var(--ink);
+  color: var(--white);
   text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--rule);
+  padding: 8px 18px;
+  border-radius: 9px;
+  background: var(--ink);
   transition: all 0.18s;
-  background: rgba(255,255,255,0.6);
 }
 
 .card-link:hover {
-  background: var(--ink);
-  color: var(--white);
-  border-color: var(--ink);
+  background: var(--red);
   transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(232,50,26,0.25);
 }
 
-.rel-wrap {
+.card-source-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--mid);
 }
 
-.rel-bar {
-  width: 48px; height: 3px;
-  background: var(--rule);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.rel-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--red), var(--orange));
-  border-radius: 2px;
+.card-source-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* ── EMPTY / ERROR ── */
@@ -1235,7 +1269,15 @@ function hl(t) {
 }
 
 function cardHTML(r, i) {
-  const tl = { video: 'VIDEO', audio: 'AUDIO', article: 'RAKSTS', social: 'SOCIĀLS' };
+  const typeLabel = { video: 'VIDEO', audio: 'AUDIO', article: 'RAKSTS', social: 'SOCIĀLS' };
+  const typeIcon  = { video: '▶', audio: '🎙', article: '📰', social: '💬' };
+  const srcColors = {
+    delfi:'#e63946', lsm:'#2196f3', apollo:'#e63946', tvnet:'#9c27b0',
+    jauns:'#ff9800', ltv:'#e63946', lr:'#2196f3', tv3:'#e8321a',
+    youtube:'#ff0000', instagram:'#e1306c', facebook:'#1877f2',
+    social:'#4caf50', other:'#607d8b'
+  };
+
   const ts = r.timestamps?.length ? `
     <div class="ts-block">
       <div class="ts-hdr">⏱ Precīzas vietas ierakstā</div>
@@ -1248,28 +1290,37 @@ function cardHTML(r, i) {
     </div>` : '';
 
   const rel = Math.min(100, Math.max(0, r.relevance || 0));
+  const relClass = rel >= 75 ? 'high' : rel >= 45 ? 'med' : '';
   const delay = Math.min(i * 0.05, 0.5);
+  const srcColor = srcColors[r.source] || '#607d8b';
+  const type = r.type || 'article';
 
-  return `<div class="card ${r.type||''}" style="animation-delay:${delay}s">
-    <div class="card-head">
-      <div class="card-badges">
-        <span class="badge ${r.type||'article'}">${tl[r.type]||'RAKSTS'}</span>
-        <span class="badge src">${r.sourceName||r.source||''}</span>
-        ${r.lang ? `<span class="badge src">${r.lang.toUpperCase()}</span>` : ''}
+  return `<div class="card ${type}" style="animation-delay:${delay}s">
+    <div class="card-stripe"></div>
+    <div class="card-body">
+      <div class="card-head">
+        <div class="card-badges">
+          <span class="badge ${type}">${typeIcon[type]||'📰'} ${typeLabel[type]||'RAKSTS'}</span>
+          <span class="badge src">${r.sourceName||r.source||''}</span>
+          ${r.lang ? `<span class="badge src">${r.lang.toUpperCase()}</span>` : ''}
+        </div>
+        <div class="card-meta-right">
+          ${rel > 0 ? `<span class="rel-pill ${relClass}">${rel}%</span>` : ''}
+          <span class="card-date">${r.dateLabel||r.date||''}</span>
+        </div>
       </div>
-      <span class="card-date">${r.dateLabel||r.date||''}</span>
-    </div>
-    <div class="card-title">${hl(r.title)||''}</div>
-    <div class="card-excerpt">${hl(r.excerpt)||''}</div>
-    ${ts}
-    <div class="card-foot">
-      <a class="card-link" href="${r.url||'#'}" target="_blank">
-        Atvērt avotu
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-      <div class="rel-wrap">
-        <span>${rel}%</span>
-        <div class="rel-bar"><div class="rel-fill" style="width:${rel}%"></div></div>
+      <div class="card-title"><a href="${r.url||'#'}" target="_blank">${hl(r.title)||''}</a></div>
+      <div class="card-excerpt">${hl(r.excerpt)||''}</div>
+      ${ts}
+      <div class="card-foot">
+        <a class="card-link" href="${r.url||'#'}" target="_blank">
+          Atvērt avotu
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <div class="card-source-row">
+          <span class="card-source-dot" style="background:${srcColor}"></span>
+          <span>${r.sourceName||r.source||''}</span>
+        </div>
       </div>
     </div>
   </div>`;
